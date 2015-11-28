@@ -1,0 +1,9 @@
+name "ddoom"
+description "DDOOM"
+copyright "Copyright © 2015, akira"
+authors "outland.karasu@gmail.com"
+license "MIT"
+homepage "https://github.com/outlandkarasu/ddoom"
+dependency "derelict-sdl2" version="~>1.9.7"
+dependency "derelict-assimp3" version="~>1.0.1"
+
