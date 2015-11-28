@@ -53,6 +53,18 @@ void main(string[] args) {
     // OpenGL3 ライブラリ再ロード
     DerelictGL3.reload();
 
-    SDL_Delay(5000);
+    // メインループ
+    for(bool loop = true; loop;) {
+        for(SDL_Event event; SDL_PollEvent(&event);) {
+            // キーボード押下で終了
+            switch(event.type) {
+                case SDL_KEYDOWN:
+                    loop = false;
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 }
 
