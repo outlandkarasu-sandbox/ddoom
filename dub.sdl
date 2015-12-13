@@ -7,4 +7,5 @@ homepage "https://github.com/outlandkarasu/ddoom"
 dependency "derelict-sdl2" version="~>1.9.7"
 dependency "derelict-gl3" version="~>1.0.17"
 dependency "derelict-assimp3" version="~>1.0.1"
+stringImportPaths "source/"
 
