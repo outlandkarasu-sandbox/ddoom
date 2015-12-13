@@ -17,8 +17,8 @@ shared static this() {
 }
 
 enum {
-    WINDOW_WIDTH = 1024, /// ウィンドウの幅
-    WINDOW_HEIGHT = 768, /// ウィンドウの高さ
+    WINDOW_WIDTH = 640, /// ウィンドウの幅
+    WINDOW_HEIGHT = 640, /// ウィンドウの高さ
 }
 
 /// フレームレート
