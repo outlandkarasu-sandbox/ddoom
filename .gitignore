@@ -5,5 +5,5 @@ __dummy.html
 *.obj
 *.swp
 
-ddoom
+/ddoom
 
