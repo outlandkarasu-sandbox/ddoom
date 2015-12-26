@@ -35,6 +35,11 @@ enum WINDOW_TITLE = "ddoom";
  *      args = コマンドライン引数
  */ 
 void main(string[] args) {
+    // ASSIMPログ設定
+    auto assImpLogStream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, null);
+    aiAttachLogStream(&assImpLogStream);
+    scope(exit) aiDetachAllLogStreams();
+
     // SDL初期化
     enforceSDL(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     scope(exit) SDL_Quit();
