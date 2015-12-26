@@ -48,14 +48,14 @@ class Application {
 
         // 視点を設定する
         Camera cam;
-        cam.move(0.0f, 0.0f, -1.0f)
-           .rotateX(cradians!(45.0))
-           .rotateY(cradians!(45.0));
+        cam.move(0.0f, 0.0f, 5.0f)
+           .rotateX(cradians!(20.0))
+           .rotateY(cradians!(10.0))
+           .rotateZ(cradians!(15.0))
+           .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
 
-        mat4 projection = mat4.identity;
         mat4 model = mat4.identity;
-        mat4 view = cam.matrix;
-        mat4 mvp = model * view * projection;
+        mat4 mvp = cam.matrix(model);
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
         glEnableVertexAttribArray(0);

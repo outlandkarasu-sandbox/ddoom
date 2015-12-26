@@ -1,8 +1,11 @@
 module ddoom.camera;
 
+import std.stdio;
+
 import gl3n.math : cradians, clamp;
 
 import gl3n.linalg;
+import gl3n.math;
 
 @safe:
 
@@ -64,16 +67,35 @@ struct Camera {
         return this;
     }
 
-    /// カメラ行列を返す
-    @property mat4 matrix() {
-        return mat4.identity
-            .translate(
-                -position_.x,
-                -position_.y,
-                -position_.z)
+    /// 平行投影に設定する
+    ref Camera orthogonal(float l, float r, float b, float t, float n, float f) {
+        projection_ = mat4.orthographic(l, r, b, t, n, f);
+        return this;
+    }
+
+    /// 透視投影に設定する
+    ref Camera perspective(float w, float h, float fov, float n, float f) {
+        projection_ = mat4.perspective(w, h, fov, n, f);
+        return this;
+    }
+
+    /// プロジェクション行列を返す
+    @property mat4 projection() const nothrow pure @nogc {
+        return projection_;
+    }
+
+    /// ビュー行列を返す
+    @property mat4 view() const nothrow pure @nogc {
+        return mat4.translation(
+                -position_.x, -position_.y, -position_.z)
             .rotatex(rotation_.x)
             .rotatey(rotation_.y)
             .rotatez(rotation_.z);
+    }
+
+    /// 視点変換行列を返す
+    mat4 matrix(ref const mat4 model) const {
+        return projection_ * view * model;
     }
 
 private:
@@ -85,5 +107,8 @@ private:
 
     /// 画角
     vec3r rotation_ = vec3r(0.0, 0.0, 0.0);
+
+    /// 射影変換行列
+    mat4 projection_ = mat4.identity;
 }
 
