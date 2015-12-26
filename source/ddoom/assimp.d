@@ -119,7 +119,6 @@ private:
         // 面配列。頂点数別にまとめる
         Appender!(uint[])[uint] faces;
         foreach(f; mesh.mFaces[0 .. mesh.mNumFaces]) {
-            writefln("%s", f);
             immutable n = f.mNumIndices;
             auto app = n in faces;
             if(app is null) {
@@ -127,6 +126,7 @@ private:
             }
             app.put(f.mIndices[0 .. n]);
         }
+
         uint[][uint] facesArray;
         foreach(e; faces.byKeyValue) {
             facesArray[e.key] = e.value.data;

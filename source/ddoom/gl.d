@@ -3,6 +3,8 @@
  */ 
 module ddoom.gl;
 
+import std.format : format;
+
 import derelict.opengl3.gl3;
 
 /// OpenGL関連例外
@@ -12,6 +14,18 @@ class GLException : Exception {
     }
     @nogc @safe pure nothrow this(string msg, Throwable next, string file = __FILE__, size_t line = __LINE__) {
         super(msg, file, line, next);
+    }
+}
+
+/// OpenGLのエラーチェックを行う
+void checkGLError(string file = __FILE__, size_t line = __LINE__) {
+    GLenum[] errors;
+    for(GLenum error; (error = glGetError()) != GL_NO_ERROR;) {
+        errors ~= error;
+    }
+
+    if(errors.length > 0) {
+        throw new GLException(format("%s", errors), file, line);
     }
 }
 

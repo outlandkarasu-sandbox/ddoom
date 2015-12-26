@@ -6,6 +6,7 @@ import derelict.opengl3.gl3;
 import gl3n.linalg;
 import gl3n.math;
 
+import ddoom.asset;
 import ddoom.assimp;
 import ddoom.camera;
 import ddoom.gl;
@@ -19,19 +20,6 @@ class Application {
 
     /// 初期化
     this() {
-        // 頂点配列の確保
-        glGenVertexArrays(1, &vertexArrayID_);
-        glBindVertexArray(vertexArrayID_);
-
-        // 頂点バッファの確保
-        glGenBuffers(1, &vertexBuffer_);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer_);
-        glBufferData(
-                GL_ARRAY_BUFFER,
-                VERTEX_BUFFER_DATA.length * GLfloat.sizeof,
-                VERTEX_BUFFER_DATA.ptr,
-                GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // 頂点シェーダー・ピクセルシェーダーの生成
         programID_ = compileProgram(
@@ -44,8 +32,10 @@ class Application {
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/cube.blend");
         auto scene = sceneAsset.createScene();
-        writefln("%s", scene.root.meshes.length);
-        writefln("%s", scene.root.meshes[0].faces[3].length);
+
+        if(scene.root !is null && scene.root.meshes.length > 0) {
+            mesh_ = new GPUMesh(scene.root.meshes[0]);
+        }
     }
 
     /// フレーム描画
@@ -55,7 +45,7 @@ class Application {
 
         // 視点を設定する
         Camera cam;
-        cam.move(0.0f, 0.0f, 5.0f)
+        cam.move(0.0f, 0.0f, 30.0f)
            .rotateX(cradians!(20.0))
            .rotateY(cradians!(10.0))
            .rotateZ(cradians!(15.0))
@@ -65,49 +55,28 @@ class Application {
         mat4 mvp = cam.matrix(model);
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
-        glEnableVertexAttribArray(0);
-        scope(exit) glDisableVertexAttribArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer_);
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        glVertexAttribPointer(
-            0,
-            3,
-            GL_FLOAT,
-            GL_FALSE,
-            0,
-            cast(void*)0);
-
-        // Draw the triangle !
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        if(mesh_ !is null) {
+            mesh_.draw();
+        }
     }
 
     /// アプリケーション終了
     void exit() {
+        if(mesh_ !is null) {
+            mesh_.release();
+        }
         glDeleteProgram(programID_);
-        glDeleteBuffers(1, &vertexBuffer_);
     }
 
 private:
-
-    /// 頂点データ
-    static immutable GLfloat[] VERTEX_BUFFER_DATA = [
-        -0.1f, -0.1f, 0.0f,
-        0.1f, -0.1f, 0.0f,
-        0.0f,  0.1f, 0.0f,
-    ];
-
-    /// 頂点配列ID
-    GLuint vertexArrayID_;
-
-    /// 頂点バッファ
-    GLuint vertexBuffer_;
 
     /// シェーダープログラムID
     GLuint programID_;
 
     /// 視点変換行列変数のID
     GLuint mvpID_;
+
+    /// メッシュオブジェクト
+    GPUMesh mesh_;
 }
 

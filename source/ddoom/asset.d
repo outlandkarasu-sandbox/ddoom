@@ -3,19 +3,22 @@
  */
 module ddoom.asset;
 
+import std.stdio : writefln;
+
+import derelict.opengl3.gl3;
 import gl3n.linalg;
 
-@safe:
+import ddoom.gl;
 
 /// シーン
 class Scene {
 
     /// ルートノードを指定して生成する
-    this(const(Node) root) {
+    this(const(Node) root) @safe pure nothrow @nogc {
         root_ = root;
     }
 
-    @property const pure nothrow {
+    @property @safe const pure nothrow @nogc {
 
         /// ルートノードを取得する
         const(Node) root() {return root_;}
@@ -41,13 +44,13 @@ class Node {
     this(string name,
             const(Mesh)[] meshes,
             const(Node)[] children,
-            ref const(mat4) transformation) {
+            ref const(mat4) transformation) @safe pure nothrow @nogc {
         meshes_ = meshes;
         children_ = children;
         transformation_ = transformation;
     }
 
-    @property const pure nothrow {
+    @property @safe const pure nothrow @nogc {
 
         /// ノード名を返す
         string name() {return name_;}
@@ -88,13 +91,13 @@ class Mesh {
      */
     this(string name,
             const(vec3)[] vertices,
-            const(uint[][uint]) faces) {
+            const(uint[][uint]) faces) @safe pure nothrow @nogc {
         name_ = name;
         vertices_ = vertices;
         faces_ = faces;
     }
 
-    @property const pure nothrow {
+    @property @safe const pure nothrow @nogc {
 
         /// 頂点配列を返す
         const(vec3)[] vertices() {return vertices_;}
@@ -113,5 +116,147 @@ private:
 
     /// 面配列
     const(uint[][uint]) faces_;
+}
+
+/// GPUに転送されたメッシュ
+class GPUMesh {
+
+    /// GPUと結びつける
+    this(const(Mesh) mesh) {
+        auto vertices = mesh.vertices;
+        auto faces = mesh.faces;
+
+        // 頂点配列の確保
+        glGenVertexArrays(1, &vertexArrayID_);
+        glBindVertexArray(vertexArrayID_);
+        scope(exit) glBindVertexArray(0);
+
+        // 頂点バッファの確保
+        glGenBuffers(1, &vertexBufferID_);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID_);
+        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // 頂点バッファにデータを転送する
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            vertices.length * vec3.sizeof,
+            vertices.ptr,
+            GL_STATIC_DRAW);
+
+        // 各要素バッファの初期化
+        foreach(e; faces.byKeyValue) {
+            // 1要素当たりの頂点数
+            immutable vcount = e.key;
+
+            // 要素数
+            immutable size = cast(uint) e.value.length;
+
+            // 頂点属性の設定
+            glEnableVertexAttribArray(0);
+            scope(exit) glDisableVertexAttribArray(0);
+
+            // 要素バッファの生成
+            GLuint id;
+            glGenBuffers(1, &id);
+
+            // エラー発生時は破棄
+            scope(failure) glDeleteBuffers(1, &id);
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id);
+            scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            // 要素バッファにデータを転送する
+            glBufferData(
+                GL_ELEMENT_ARRAY_BUFFER,
+                size * uint.sizeof,
+                e.value.ptr,
+                GL_STATIC_DRAW);
+
+            // ID登録
+            elementArrays_[e.key] = ElementArrayInfo(id, size / vcount);
+        }
+    }
+
+    /// 解放処理
+    ~this() nothrow @nogc {
+        release();
+    }
+
+    /// GPUとの結び付けを解除する
+    void release() nothrow @nogc {
+        // 頂点バッファの解放
+        foreach(ref info; elementArrays_.byValue) {
+            glDeleteBuffers(1, &info.id);
+            info.id = 0;
+            info.faceCount = 0;
+        }
+        elementArrays_ = elementArrays_.init;
+
+        // 頂点バッファの解放
+        glDeleteBuffers(1, &vertexBufferID_);
+        vertexBufferID_ = 0;
+
+        // 頂点配列の解放
+        glDeleteVertexArrays(1, &vertexArrayID_);
+        vertexArrayID_ = 0;
+    }
+
+    /// 描画
+    void draw() const {
+        // 頂点配列の選択
+        glBindVertexArray(vertexArrayID_);
+        scope(exit) glBindVertexArray(0);
+
+        // 頂点属性の有効化
+        glEnableVertexAttribArray(0);
+        scope(exit) glDisableVertexAttribArray(0);
+
+        // 頂点バッファの選択
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID_);
+        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // 頂点属性の設定
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
+
+        // 要素バッファの描画
+        foreach(e; elementArrays_.byKeyValue) {
+            immutable vcount = e.key;
+            immutable type = toGLType(vcount);
+            immutable info = e.value;
+
+            // 描画対象の要素バッファの結び付け
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, info.id);
+            scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+            // 要素バッファを描画する
+            glDrawElements(type, info.faceCount, GL_UNSIGNED_INT, null);
+        }
+    }
+
+private:
+
+    /// 要素配列の情報
+    struct ElementArrayInfo {
+        GLuint id;
+        uint faceCount;
+    }
+
+    /// 頂点数から描画タイプを判別する
+    static GLenum toGLType(uint vcount) @safe nothrow pure @nogc {
+        switch(vcount) {
+        case 3: return GL_TRIANGLES;
+        case 2: return GL_LINES;
+        default: case 1: return GL_POINTS;
+        }
+    }
+
+    /// 頂点配列ID
+    GLuint vertexArrayID_;
+
+    /// 頂点バッファID
+    GLuint vertexBufferID_;
+
+    /// インデックスバッファID
+    ElementArrayInfo[uint] elementArrays_;
 }
 
