@@ -6,6 +6,7 @@ import derelict.opengl3.gl3;
 import gl3n.linalg;
 import gl3n.math;
 
+import ddoom.assimp;
 import ddoom.camera;
 import ddoom.gl;
 
@@ -39,6 +40,12 @@ class Application {
 
         // 視点変換行列のIDを取得
         mvpID_ = glGetUniformLocation(programID_, "MVP");
+
+        // シーンの読み込み
+        scope sceneAsset = new SceneAsset("asset/cube.blend");
+        auto scene = sceneAsset.createScene();
+        writefln("%s", scene.root.meshes.length);
+        writefln("%s", scene.root.meshes[0].faces[3].length);
     }
 
     /// フレーム描画
