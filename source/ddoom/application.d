@@ -1,6 +1,7 @@
 module ddoom.application;
 
 import std.stdio;
+import std.algorithm : map, each;
 
 import derelict.opengl3.gl3;
 import gl3n.linalg;
@@ -34,15 +35,17 @@ class Application {
         scope sceneAsset = new SceneAsset("asset/cube.blend");
         auto scene = sceneAsset.createScene();
 
-        if(scene.root !is null && scene.root.meshes.length > 0) {
-            mesh_ = new GPUMesh(scene.root.meshes[0]);
+        if(scene.root !is null) {
+            meshes_ = scene.root.meshes[0 .. $]
+                .map!(m => new GPUMesh(m))
+                .array;
         }
 
         // 視点を設定する
-        camera_.move(-5.0f, 2.0f, 5.0f)
-           .rotateX(cradians!(20.0))
+        camera_.move(-7.5f, 5.0f, 7.5f)
+           .rotateX(cradians!(30.0))
            .rotateY(cradians!(42.5))
-           .rotateZ(cradians!(12.5))
+           .rotateZ(cradians!(20.0))
            .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
     }
 
@@ -57,16 +60,13 @@ class Application {
         mat4 mvp = camera_.matrix(model);
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
-        if(mesh_ !is null) {
-            mesh_.draw(diffuseID_);
-        }
+        // 全メッシュの描画
+        meshes_.each!(m => m.draw(diffuseID_));
     }
 
     /// アプリケーション終了
     void exit() {
-        if(mesh_ !is null) {
-            mesh_.release();
-        }
+        meshes_.each!("a.release()");
         glDeleteProgram(programID_);
     }
 
@@ -82,7 +82,7 @@ private:
     GLuint diffuseID_;
 
     /// メッシュオブジェクト
-    GPUMesh mesh_;
+    GPUMesh[] meshes_;
 
     /// カメラ
     Camera camera_;
