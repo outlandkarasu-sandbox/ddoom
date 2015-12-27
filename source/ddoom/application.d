@@ -37,23 +37,24 @@ class Application {
         if(scene.root !is null && scene.root.meshes.length > 0) {
             mesh_ = new GPUMesh(scene.root.meshes[0]);
         }
+
+        // 視点を設定する
+        camera_.move(-5.0f, 2.0f, 5.0f)
+           .rotateX(cradians!(20.0))
+           .rotateY(cradians!(42.5))
+           .rotateZ(cradians!(12.5))
+           .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
     }
 
     /// フレーム描画
     void drawFrame() {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glUseProgram(programID_);
 
-        // 視点を設定する
-        Camera cam;
-        cam.move(-5.0f, 1.0f, 5.0f)
-           .rotateX(cradians!(0.0))
-           .rotateY(cradians!(45.0))
-           .rotateZ(cradians!(0.0))
-           .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
-
         mat4 model = mat4.identity;
-        mat4 mvp = cam.matrix(model);
+        mat4 mvp = camera_.matrix(model);
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
         if(mesh_ !is null) {
@@ -82,5 +83,8 @@ private:
 
     /// メッシュオブジェクト
     GPUMesh mesh_;
+
+    /// カメラ
+    Camera camera_;
 }
 
