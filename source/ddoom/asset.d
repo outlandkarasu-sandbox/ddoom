@@ -142,10 +142,12 @@ class Mesh {
      */
     this(string name,
             const(vec3)[] vertices,
+            const(vec3)[] normals,
             const(uint[][uint]) faces,
             const(Material) material) @safe pure nothrow @nogc {
         name_ = name;
         vertices_ = vertices;
+        normals_ = normals;
         faces_ = faces;
         material_ = material;
     }
@@ -154,6 +156,9 @@ class Mesh {
 
         /// 頂点配列を返す
         const(vec3)[] vertices() {return vertices_;}
+
+        /// 法線配列を返す
+        const(vec3)[] normals() {return normals_;}
 
         /// 面配列を返す
         const(uint[][uint]) faces() {return faces_;}
@@ -169,6 +174,9 @@ private:
 
     /// 頂点配列
     const(vec3)[] vertices_;
+
+    /// 法線配列
+    const(vec3)[] normals_;
 
     /// 面配列
     const(uint[][uint]) faces_;
@@ -236,7 +244,8 @@ class GPUMesh {
         }
 
         // 表面色
-        diffuse_ = mesh.material.diffuse;
+        auto c = mesh.material.diffuse;
+        diffuse_ = vec3(c.x, c.y, c.z);
     }
 
     /// 解放処理

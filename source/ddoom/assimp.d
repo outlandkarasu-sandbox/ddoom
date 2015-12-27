@@ -47,7 +47,7 @@ class SceneAsset {
                     toStringz(path),
                     aiProcess_CalcTangentSpace
                     | aiProcess_Triangulate
-                    //| aiProcess_JoinIdenticalVertices
+                    | aiProcess_JoinIdenticalVertices
                     | aiProcess_SortByPType));
     }
 
@@ -160,6 +160,14 @@ private:
                 .map!(v => vec3(v.x, v.y, v.z))
                 .array;
 
+        // 法線配列
+        const(vec3)[] normals;
+        if(mesh.mNormals !is null) {
+            normals = mesh.mNormals[0 .. mesh.mNumVertices]
+                .map!(n => vec3(n.x, n.y, n.z))
+                .array;
+        }
+
         // 面配列。頂点数別にまとめる
         Appender!(uint[])[uint] faces;
         foreach(f; mesh.mFaces[0 .. mesh.mNumFaces]) {
@@ -180,7 +188,7 @@ private:
         // マテリアルの取得
         immutable mi = mesh.mMaterialIndex;
         auto material = (mi < materials.length) ? materials[mi] : null;
-        return new Mesh(name, vertices, facesArray, material);
+        return new Mesh(name, vertices, normals, facesArray, material);
     }
 
     /// シーンへのポインタ

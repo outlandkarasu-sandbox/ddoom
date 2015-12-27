@@ -99,21 +99,28 @@ class Application {
         // 画面クリア
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // 使用プログラム設定
-        glUseProgram(programID_);
-
-        // 視点変換
-        mat4 model = mat4.identity;
-        mat4 mvp = camera_.matrix(model);
-        glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
-
         // 全メッシュの描画
-        meshes_.each!(m => m.draw(diffuseID_));
+        foreach(i, m; meshes_) {
+            // 終了時にフラッシュ
+            scope(exit) glFlush();
+
+            // 使用プログラム設定
+            glUseProgram(programID_);
+            scope(exit) glUseProgram(0);
+
+            // 視点変換
+            mat4 model = mat4.identity;
+            mat4 mvp = camera_.matrix(model);
+            glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
+
+            // 描画処理
+            m.draw(diffuseID_);
+        }
     }
 
     /// アプリケーション終了
     void exit() {
-        meshes_.each!("a.release()");
+        meshes_.each!(m => m.release());
         glDeleteProgram(programID_);
     }
 
