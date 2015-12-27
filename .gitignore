@@ -4,6 +4,7 @@ __dummy.html
 *.o
 *.obj
 *.swp
+*.blend1
 dna.txt
 
 /ddoom

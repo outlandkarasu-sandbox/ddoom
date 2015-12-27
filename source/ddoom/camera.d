@@ -86,8 +86,7 @@ struct Camera {
 
     /// ビュー行列を返す
     @property mat4 view() const nothrow pure @nogc {
-        return mat4.translation(
-                -position_.x, -position_.y, -position_.z)
+        return mat4.translation(-position_.x, -position_.y, -position_.z)
             .rotatex(rotation_.x)
             .rotatey(rotation_.y)
             .rotatez(rotation_.z);

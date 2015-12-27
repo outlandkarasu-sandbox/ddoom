@@ -79,8 +79,10 @@ void main(string[] args) {
         for(SDL_Event event; SDL_PollEvent(&event);) {
             // キーボード押下で終了
             switch(event.type) {
-                case SDL_QUIT:
                 case SDL_KEYDOWN:
+                    app.onKeyDown(event.key.keysym.scancode);
+                    break;
+                case SDL_QUIT:
                     loop = false;
                     break;
                 default:

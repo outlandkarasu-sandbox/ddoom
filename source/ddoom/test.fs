@@ -1,8 +1,10 @@
 #version 330 core
 
+uniform vec3 diffuse; 
+
 out vec3 color;
 
 void main() {
-    color = vec3(1,0,0);
+    color = diffuse;
 }
 
