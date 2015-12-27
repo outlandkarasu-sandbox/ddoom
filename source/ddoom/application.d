@@ -26,8 +26,9 @@ class Application {
                 import("ddoom/test.vs"),
                 import("ddoom/test.fs"));
 
-        // 視点変換行列のIDを取得
+        // 変数のIDを取得
         mvpID_ = glGetUniformLocation(programID_, "MVP");
+        diffuseID_ = glGetUniformLocation(programID_, "diffuse");
 
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/cube.blend");
@@ -56,7 +57,7 @@ class Application {
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
         if(mesh_ !is null) {
-            mesh_.draw();
+            mesh_.draw(diffuseID_);
         }
     }
 
@@ -75,6 +76,9 @@ private:
 
     /// 視点変換行列変数のID
     GLuint mvpID_;
+
+    /// 表面色変数のID
+    GLuint diffuseID_;
 
     /// メッシュオブジェクト
     GPUMesh mesh_;

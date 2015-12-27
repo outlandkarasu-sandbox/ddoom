@@ -13,7 +13,10 @@ import ddoom.gl;
 /// シーン
 class Scene {
 
-    /// ルートノードを指定して生成する
+    /**
+     *  Params:
+     *      root = ルートノード
+     */
     this(const(Node) root) @safe pure nothrow @nogc {
         root_ = root;
     }
@@ -28,6 +31,53 @@ private:
 
     /// ルートノード
     const(Node) root_;
+}
+
+/// 描画色などのマテリアル
+class Material {
+
+    /// 色情報
+    alias vec4 Color;
+
+    /// 値を指定して生成する
+    this(string name,
+            Color diffuse,
+            Color specular,
+            Color ambient) {
+        name_ = name;
+        diffuse_ = diffuse;
+        specular_ = specular;
+        ambient_ = ambient;
+    }
+
+    @property @safe const pure nothrow @nogc {
+
+        /// マテリアル名を返す
+        string name() {return name_;}
+
+        /// 表面色を返す
+        Color diffuse() {return diffuse_;}
+
+        /// ハイライト色を返す
+        Color specular() {return specular_;}
+
+        /// 環境色を返す
+        Color ambient() {return ambient_;}
+    }
+
+private:
+
+    /// マテリアル名
+    string name_;
+
+    /// 表面色
+    Color diffuse_;
+
+    /// ハイライト
+    Color specular_;
+
+    /// 環境色
+    Color ambient_;
 }
 
 /// ノード
@@ -88,13 +138,16 @@ class Mesh {
      *      name = メッシュ名
      *      vertices = 頂点配列
      *      faces = 面配列
+     *      material = マテリアル
      */
     this(string name,
             const(vec3)[] vertices,
-            const(uint[][uint]) faces) @safe pure nothrow @nogc {
+            const(uint[][uint]) faces,
+            const(Material) material) @safe pure nothrow @nogc {
         name_ = name;
         vertices_ = vertices;
         faces_ = faces;
+        material_ = material;
     }
 
     @property @safe const pure nothrow @nogc {
@@ -104,6 +157,9 @@ class Mesh {
 
         /// 面配列を返す
         const(uint[][uint]) faces() {return faces_;}
+
+        /// マテリアル
+        const(Material) material() {return material_;}
     }
 
 private:
@@ -116,6 +172,9 @@ private:
 
     /// 面配列
     const(uint[][uint]) faces_;
+
+    /// マテリアル
+    const(Material) material_;
 }
 
 /// GPUに転送されたメッシュ
@@ -175,6 +234,9 @@ class GPUMesh {
             // ID登録
             elementArrays_[e.key] = ElementArrayInfo(id, size / vcount);
         }
+
+        // 表面色
+        diffuse_ = mesh.material.diffuse;
     }
 
     /// 解放処理
@@ -202,7 +264,10 @@ class GPUMesh {
     }
 
     /// 描画
-    void draw() const {
+    void draw(GLuint diffuseID) const {
+        // 表面色の設定
+        glUniform3fv(diffuseID, 1, diffuse_.value_ptr);
+
         // 頂点配列の選択
         glBindVertexArray(vertexArrayID_);
         scope(exit) glBindVertexArray(0);
@@ -258,5 +323,8 @@ private:
 
     /// インデックスバッファID
     ElementArrayInfo[uint] elementArrays_;
+
+    /// 表面色
+    Material.Color diffuse_;
 }
 
