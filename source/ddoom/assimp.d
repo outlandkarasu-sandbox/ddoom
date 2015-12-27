@@ -43,7 +43,12 @@ class SceneAsset {
 
     /// 指定パスのシーンファイルを開く
     this(string path) {
-        scene_ = enforceAsset(aiImportFile(toStringz(path), aiProcessPreset_TargetRealtime_MaxQuality));
+        scene_ = enforceAsset(aiImportFile(
+                    toStringz(path),
+                    aiProcess_CalcTangentSpace
+                    | aiProcess_Triangulate
+                    //| aiProcess_JoinIdenticalVertices
+                    | aiProcess_SortByPType));
     }
 
     /// シーンの破棄

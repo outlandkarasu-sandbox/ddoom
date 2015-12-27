@@ -232,7 +232,7 @@ class GPUMesh {
                 GL_STATIC_DRAW);
 
             // ID登録
-            elementArrays_[e.key] = ElementArrayInfo(id, size / vcount);
+            elementArrays_[e.key] = ElementArrayInfo(id, size);
         }
 
         // 表面色
@@ -250,7 +250,7 @@ class GPUMesh {
         foreach(ref info; elementArrays_.byValue) {
             glDeleteBuffers(1, &info.id);
             info.id = 0;
-            info.faceCount = 0;
+            info.size = 0;
         }
         elementArrays_ = elementArrays_.init;
 
@@ -294,7 +294,7 @@ class GPUMesh {
             scope(exit) glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
             // 要素バッファを描画する
-            glDrawElements(type, info.faceCount, GL_UNSIGNED_INT, null);
+            glDrawElements(type, info.size, GL_UNSIGNED_INT, null);
         }
     }
 
@@ -303,7 +303,7 @@ private:
     /// 要素配列の情報
     struct ElementArrayInfo {
         GLuint id;
-        uint faceCount;
+        uint size;
     }
 
     /// 頂点数から描画タイプを判別する
@@ -325,6 +325,6 @@ private:
     ElementArrayInfo[uint] elementArrays_;
 
     /// 表面色
-    Material.Color diffuse_;
+    vec3 diffuse_;
 }
 

@@ -33,17 +33,12 @@ class Application {
         diffuseID_ = glGetUniformLocation(programID_, "diffuse");
 
         // シーンの読み込み
-        scope sceneAsset = new SceneAsset("asset/cube.blend");
-        auto scene = sceneAsset.createScene();
-
+        scope sceneAsset = new SceneAsset("asset/cube.obj");
+        auto scene = sceneAsset.createScene(); 
         if(scene.root !is null) {
             meshes_ = scene.root.meshes
                 .map!(m => new GPUMesh(m))
                 .array;
-        }
-
-        foreach(i, m; scene.root.meshes) {
-            writefln("%d:%d", i, m.faces.length);
         }
 
         // 視点を設定する
@@ -92,11 +87,22 @@ class Application {
 
     /// フレーム描画
     void drawFrame() {
+        // 隠面消去を有効にする
         glEnable(GL_DEPTH_TEST);
+        scope(exit) glDisable(GL_DEPTH_TEST);
         glDepthFunc(GL_LESS);
+
+        // ポリゴン片面のみ描画
+        glEnable(GL_CULL_FACE);
+        scope(exit) glDisable(GL_CULL_FACE);
+
+        // 画面クリア
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // 使用プログラム設定
         glUseProgram(programID_);
 
+        // 視点変換
         mat4 model = mat4.identity;
         mat4 mvp = camera_.matrix(model);
         glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
