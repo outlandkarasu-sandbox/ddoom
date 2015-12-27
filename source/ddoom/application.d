@@ -3,6 +3,7 @@ module ddoom.application;
 import std.stdio;
 import std.algorithm : map, each;
 
+import derelict.sdl2.sdl;
 import derelict.opengl3.gl3;
 import gl3n.linalg;
 import gl3n.math;
@@ -36,17 +37,57 @@ class Application {
         auto scene = sceneAsset.createScene();
 
         if(scene.root !is null) {
-            meshes_ = scene.root.meshes[0 .. $]
+            meshes_ = scene.root.meshes
                 .map!(m => new GPUMesh(m))
                 .array;
         }
 
+        foreach(i, m; scene.root.meshes) {
+            writefln("%d:%d", i, m.faces.length);
+        }
+
         // 視点を設定する
-        camera_.move(-7.5f, 5.0f, 7.5f)
-           .rotateX(cradians!(30.0))
-           .rotateY(cradians!(42.5))
-           .rotateZ(cradians!(20.0))
-           .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
+        camera_.move(0.0f, 0.0f, 5.0f).perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
+    }
+
+    /// キーダウン時の処理
+    void onKeyDown(int keyCode) {
+        immutable DISTANCE = 0.05f;
+        immutable ANGLE = 0.01f;
+        switch(keyCode) {
+        case SDL_SCANCODE_W:
+            camera_.move(0.0f, 0.0f, -DISTANCE);
+            break;
+        case SDL_SCANCODE_S:
+            camera_.move(0.0f, 0.0f, DISTANCE);
+            break;
+        case SDL_SCANCODE_A:
+            camera_.move(-DISTANCE, 0.0f, 0.0f);
+            break;
+        case SDL_SCANCODE_D:
+            camera_.move(+DISTANCE, 0.0f, 0.0f);
+            break;
+        case SDL_SCANCODE_Q:
+            camera_.move(0.0f, DISTANCE, 0.0f);
+            break;
+        case SDL_SCANCODE_E:
+            camera_.move(0.0f, -DISTANCE, 0.0f);
+            break;
+        case SDL_SCANCODE_DOWN:
+            camera_.rotateX(ANGLE);
+            break;
+        case SDL_SCANCODE_UP:
+            camera_.rotateX(-ANGLE);
+            break;
+        case SDL_SCANCODE_LEFT:
+            camera_.rotateY(-ANGLE);
+            break;
+        case SDL_SCANCODE_RIGHT:
+            camera_.rotateY(ANGLE);
+            break;
+        default:
+            break;
+        }
     }
 
     /// フレーム描画
