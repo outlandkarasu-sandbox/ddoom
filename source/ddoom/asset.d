@@ -190,8 +190,6 @@ class GPUMesh {
 
     /// GPUと結びつける
     this(const(Mesh) mesh) {
-        auto faces = mesh.faces;
-
         // 頂点配列の確保
         glGenVertexArrays(1, &vertexArrayID_);
 
@@ -200,16 +198,12 @@ class GPUMesh {
         initializeNormalBuffer(mesh.normals);
 
         // 各要素バッファの初期化
-        foreach(e; faces.byKeyValue) {
+        foreach(e; mesh.faces.byKeyValue) {
             // 1要素当たりの頂点数
             immutable vcount = e.key;
 
             // 要素数
             immutable size = cast(uint) e.value.length;
-
-            // 頂点属性の設定
-            glEnableVertexAttribArray(0);
-            scope(exit) glDisableVertexAttribArray(0);
 
             // 要素バッファの生成
             GLuint id;
@@ -244,7 +238,7 @@ class GPUMesh {
 
     /// GPUとの結び付けを解除する
     void release() nothrow @nogc {
-        // 頂点バッファの解放
+        // 頂点要素配列の解放
         foreach(ref info; elementArrays_.byValue) {
             glDeleteBuffers(1, &info.id);
             info.id = 0;
@@ -255,6 +249,10 @@ class GPUMesh {
         // 頂点バッファの解放
         glDeleteBuffers(1, &vertexBufferID_);
         vertexBufferID_ = 0;
+
+        // 法線バッファの解放
+        glDeleteBuffers(1, &normalBufferID_);
+        normalBufferID_ = 0;
 
         // 頂点配列の解放
         glDeleteVertexArrays(1, &vertexArrayID_);
@@ -271,15 +269,12 @@ class GPUMesh {
         scope(exit) glBindVertexArray(0);
 
         // 頂点属性の有効化
-        glEnableVertexAttribArray(0);
-        scope(exit) glDisableVertexAttribArray(0);
+        enableVertexAttribute(VertexAttribute.Position, vertexBufferID_);
+        scope(exit) glDisableVertexAttribArray(VertexAttribute.Position);
 
-        // 頂点バッファの選択
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID_);
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        // 頂点属性の設定
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
+        // 法線属性の有効化
+        enableVertexAttribute(VertexAttribute.Normal, normalBufferID_);
+        scope(exit) glDisableVertexAttribArray(VertexAttribute.Normal);
 
         // 要素バッファの描画
         foreach(e; elementArrays_.byKeyValue) {
@@ -302,6 +297,12 @@ private:
     struct ElementArrayInfo {
         GLuint id;
         uint size;
+    }
+
+    /// 頂点属性
+    enum VertexAttribute : GLuint {
+        Position, /// 位置
+        Normal    /// 法線
     }
 
     /// 頂点数から描画タイプを判別する
@@ -341,6 +342,14 @@ private:
             normals.length * vec3.sizeof,
             normals.ptr,
             GL_STATIC_DRAW);
+    }
+
+    /// 頂点属性の有効化
+    void enableVertexAttribute(VertexAttribute attribute, GLuint bufferID) const {
+        glEnableVertexAttribArray(attribute);
+        glBindBuffer(GL_ARRAY_BUFFER, bufferID);
+        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glVertexAttribPointer(attribute, 3, GL_FLOAT, GL_FALSE, 0, null);
     }
 
     /// 頂点配列ID
