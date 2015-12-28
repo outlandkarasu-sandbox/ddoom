@@ -190,25 +190,14 @@ class GPUMesh {
 
     /// GPUと結びつける
     this(const(Mesh) mesh) {
-        auto vertices = mesh.vertices;
         auto faces = mesh.faces;
 
         // 頂点配列の確保
         glGenVertexArrays(1, &vertexArrayID_);
-        glBindVertexArray(vertexArrayID_);
-        scope(exit) glBindVertexArray(0);
 
-        // 頂点バッファの確保
-        glGenBuffers(1, &vertexBufferID_);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID_);
-        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        // 頂点バッファにデータを転送する
-        glBufferData(
-            GL_ARRAY_BUFFER,
-            vertices.length * vec3.sizeof,
-            vertices.ptr,
-            GL_STATIC_DRAW);
+        // バッファの初期化
+        initializeVerticesBuffer(mesh.vertices);
+        initializeNormalBuffer(mesh.normals);
 
         // 各要素バッファの初期化
         foreach(e; faces.byKeyValue) {
@@ -324,11 +313,44 @@ private:
         }
     }
 
+    /// 頂点バッファの初期化
+    void initializeVerticesBuffer(const(vec3)[] vertices) {
+        // 頂点バッファの確保
+        glGenBuffers(1, &vertexBufferID_);
+        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferID_);
+        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // 頂点バッファにデータを転送する
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            vertices.length * vec3.sizeof,
+            vertices.ptr,
+            GL_STATIC_DRAW);
+    }
+
+    /// 法線バッファの初期化
+    void initializeNormalBuffer(const(vec3)[] normals) {
+        // 法線バッファの確保
+        glGenBuffers(1, &normalBufferID_);
+        glBindBuffer(GL_ARRAY_BUFFER, normalBufferID_);
+        scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // 法線バッファにデータを転送する
+        glBufferData(
+            GL_ARRAY_BUFFER,
+            normals.length * vec3.sizeof,
+            normals.ptr,
+            GL_STATIC_DRAW);
+    }
+
     /// 頂点配列ID
     GLuint vertexArrayID_;
 
     /// 頂点バッファID
     GLuint vertexBufferID_;
+
+    /// 法線バッファID
+    GLuint normalBufferID_;
 
     /// インデックスバッファID
     ElementArrayInfo[uint] elementArrays_;
