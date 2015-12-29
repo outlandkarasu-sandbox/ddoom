@@ -109,8 +109,10 @@ class Application {
             scope(exit) glUseProgram(0);
 
             // 視点変換
-            mat4 model = mat4.identity;
-            mat4 mvp = camera_.matrix(model);
+            immutable model = mat4.identity;
+            immutable view = camera_.view;
+            immutable projection = camera_.projection;
+            immutable mvp = projection * view * model;
             glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
 
             // 描画処理
