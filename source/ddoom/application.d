@@ -117,7 +117,7 @@ class Application {
             immutable view = camera_.view;
             immutable projection = camera_.projection;
             immutable mvp = projection * view * model;
-            immutable light = vec3(5.0f, 5.0f, 5.0f);
+            immutable light = vec3(5.0f, 10.0f, 5.0f);
 
             glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
             glUniformMatrix4fv(vID_, 1, GL_TRUE, view.value_ptr);
