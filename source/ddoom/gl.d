@@ -4,6 +4,7 @@
 module ddoom.gl;
 
 import std.format : format;
+import std.stdio : writefln;
 
 import derelict.opengl3.gl3;
 
@@ -62,23 +63,25 @@ void compileShader(GLuint id, string source) {
 }
 
 /// シェーダーエラー発生時に例外を投げる
-private void throwIfShaderError(alias getter, GLenum TYPE)(GLuint id) {
+private void throwIfShaderError(alias getter, alias getLog, GLenum TYPE)(GLuint id) {
     GLint result = GL_FALSE;
-    GLint logLength = 0;
     getter(id, TYPE, &result);
-    getter(id, GL_INFO_LOG_LENGTH, &logLength);
-    if(logLength > 0) {
+    if(result != GL_TRUE) {
+        GLint logLength = 0;
+        getter(id, GL_INFO_LOG_LENGTH, &logLength);
         auto message = new GLchar[logLength];
-        glGetShaderInfoLog(id, logLength, null, message.ptr);
-        throw new GLException(message.idup);
+
+        GLsizei size;
+        getLog(id, logLength, &size, message.ptr);
+        throw new GLException(message[0 .. size].idup);
     }
 }
 
 /// コンパイルエラー時に例外発生
-private alias throwIfShaderError!(glGetShaderiv, GL_COMPILE_STATUS)
+private alias throwIfShaderError!(glGetShaderiv, glGetShaderInfoLog, GL_COMPILE_STATUS)
     throwIfCompileError;
 
 /// リンクエラー時に例外発生
-private alias throwIfShaderError!(glGetProgramiv, GL_LINK_STATUS)
+private alias throwIfShaderError!(glGetProgramiv, glGetProgramInfoLog, GL_LINK_STATUS)
     throwIfLinkError;
 

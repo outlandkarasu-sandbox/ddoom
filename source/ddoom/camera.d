@@ -92,11 +92,6 @@ struct Camera {
             .rotatez(rotation_.z);
     }
 
-    /// 視点変換行列を返す
-    mat4 matrix(ref const mat4 model) const {
-        return projection_ * view * model;
-    }
-
 private:
 
     alias Vector!(real, 3) vec3r;

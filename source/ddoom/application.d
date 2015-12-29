@@ -30,7 +30,13 @@ class Application {
 
         // 変数のIDを取得
         mvpID_ = glGetUniformLocation(programID_, "MVP");
-        diffuseID_ = glGetUniformLocation(programID_, "diffuse");
+        mID_ = glGetUniformLocation(programID_, "M");
+        vID_ = glGetUniformLocation(programID_, "V");
+        mvID_ = glGetUniformLocation(programID_, "MV");
+        lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
+        diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
+        ambientID_ = glGetUniformLocation(programID_, "Ambient");
+        specularID_ = glGetUniformLocation(programID_, "Specular");
 
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/cube.obj");
@@ -99,21 +105,35 @@ class Application {
         // 画面クリア
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // 使用プログラム設定
-        glUseProgram(programID_);
-
-        // 視点変換
-        mat4 model = mat4.identity;
-        mat4 mvp = camera_.matrix(model);
-        glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
-
         // 全メッシュの描画
-        meshes_.each!(m => m.draw(diffuseID_));
+        foreach(i, m; meshes_) {
+            // 終了時にフラッシュ
+            scope(exit) glFlush();
+
+            // 使用プログラム設定
+            glUseProgram(programID_);
+            scope(exit) glUseProgram(0);
+
+            // 視点変換
+            immutable model = mat4.identity;
+            immutable view = camera_.view;
+            immutable projection = camera_.projection;
+            immutable mvp = projection * view * model;
+            immutable light = vec3(5.0f, 10.0f, 5.0f);
+
+            glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
+            glUniformMatrix4fv(vID_, 1, GL_TRUE, view.value_ptr);
+            glUniformMatrix4fv(mID_, 1, GL_TRUE, model.value_ptr);
+            glUniform3fv(lightPositionID_, 1, light.value_ptr);
+
+            // 描画処理
+            m.draw(diffuseID_, ambientID_, specularID_);
+        }
     }
 
     /// アプリケーション終了
     void exit() {
-        meshes_.each!("a.release()");
+        meshes_.each!(m => m.release());
         glDeleteProgram(programID_);
     }
 
@@ -125,8 +145,26 @@ private:
     /// 視点変換行列変数のID
     GLuint mvpID_;
 
+    /// ビュー行列変数のID
+    GLuint vID_;
+
+    /// モデル行列変数のID
+    GLuint mID_;
+
+    /// モデルビュー行列変数のID
+    GLuint mvID_;
+
+    /// 光源位置のID
+    GLuint lightPositionID_;
+
     /// 表面色変数のID
     GLuint diffuseID_;
+
+    /// 環境色変数のID
+    GLuint ambientID_;
+
+    /// ハイライト色変数のID
+    GLuint specularID_;
 
     /// メッシュオブジェクト
     GPUMesh[] meshes_;
