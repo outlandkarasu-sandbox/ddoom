@@ -36,6 +36,7 @@ class Application {
         lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
         diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
         ambientID_ = glGetUniformLocation(programID_, "Ambient");
+        specularID_ = glGetUniformLocation(programID_, "Specular");
 
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/cube.obj");
@@ -126,7 +127,7 @@ class Application {
             glUniform3fv(lightPositionID_, 1, light.value_ptr);
 
             // 描画処理
-            m.draw(diffuseID_, ambientID_);
+            m.draw(diffuseID_, ambientID_, specularID_);
         }
     }
 
@@ -161,6 +162,9 @@ private:
 
     /// 環境色変数のID
     GLuint ambientID_;
+
+    /// ハイライト色変数のID
+    GLuint specularID_;
 
     /// メッシュオブジェクト
     GPUMesh[] meshes_;

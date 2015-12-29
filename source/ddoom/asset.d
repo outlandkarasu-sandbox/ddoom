@@ -231,6 +231,8 @@ class GPUMesh {
         diffuse_ = vec3(c.x, c.y, c.z);
         c = mesh.material.ambient;
         ambient_ = vec3(c.x, c.y, c.z);
+        c = mesh.material.specular;
+        specular_ = vec3(c.x, c.y, c.z);
     }
 
     /// 解放処理
@@ -262,10 +264,11 @@ class GPUMesh {
     }
 
     /// 描画
-    void draw(GLuint diffuseID, GLuint ambientID) const {
+    void draw(GLuint diffuseID, GLuint ambientID, GLuint specularID) const {
         // 表面色の設定
         glUniform3fv(diffuseID, 1, diffuse_.value_ptr);
         glUniform3fv(ambientID, 1, ambient_.value_ptr);
+        glUniform3fv(specularID, 1, specular_.value_ptr);
 
         // 頂点配列の選択
         glBindVertexArray(vertexArrayID_);
@@ -372,5 +375,8 @@ private:
 
     /// 環境色
     vec3 ambient_;
+
+    /// ハイライト色
+    vec3 specular_;
 }
 
