@@ -65,14 +65,15 @@ void compileShader(GLuint id, string source) {
 /// シェーダーエラー発生時に例外を投げる
 private void throwIfShaderError(alias getter, alias getLog, GLenum TYPE)(GLuint id) {
     GLint result = GL_FALSE;
-    GLint logLength = 0;
     getter(id, TYPE, &result);
-    getter(id, GL_INFO_LOG_LENGTH, &logLength);
-    if(logLength > 0) {
+    if(result != GL_TRUE) {
+        GLint logLength = 0;
+        getter(id, GL_INFO_LOG_LENGTH, &logLength);
         auto message = new GLchar[logLength];
+
         GLsizei size;
         getLog(id, logLength, &size, message.ptr);
-        throw new GLException(message.idup);
+        throw new GLException(message[0 .. size].idup);
     }
 }
 
