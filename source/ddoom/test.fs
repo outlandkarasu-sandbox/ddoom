@@ -6,6 +6,7 @@ in vec3 EyeDirection_cameraspace;
 in vec3 LightDirection_cameraspace;
 
 uniform vec3 Diffuse; 
+uniform vec3 Ambient;
 uniform vec3 LightPosition_worldspace;
 
 out vec3 color;
@@ -19,6 +20,9 @@ void main() {
     vec3 n = normalize(Normal_cameraspace);
     vec3 l = normalize(LightDirection_cameraspace);
     float cosTheta = clamp(dot(n, l), 0,1);
-    color = Diffuse * lightColor * lightPower * cosTheta / (distance * distance);
+
+    vec3 ambientColor = Ambient * 0.1f;
+
+    color = ambientColor + Diffuse * lightColor * lightPower * cosTheta / (distance * distance);
 }
 

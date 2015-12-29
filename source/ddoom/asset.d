@@ -226,9 +226,11 @@ class GPUMesh {
             elementArrays_[e.key] = ElementArrayInfo(id, size);
         }
 
-        // 表面色
+        // マテリアル
         auto c = mesh.material.diffuse;
         diffuse_ = vec3(c.x, c.y, c.z);
+        c = mesh.material.ambient;
+        ambient_ = vec3(c.x, c.y, c.z);
     }
 
     /// 解放処理
@@ -260,9 +262,10 @@ class GPUMesh {
     }
 
     /// 描画
-    void draw(GLuint diffuseID) const {
+    void draw(GLuint diffuseID, GLuint ambientID) const {
         // 表面色の設定
         glUniform3fv(diffuseID, 1, diffuse_.value_ptr);
+        glUniform3fv(ambientID, 1, ambient_.value_ptr);
 
         // 頂点配列の選択
         glBindVertexArray(vertexArrayID_);
@@ -366,5 +369,8 @@ private:
 
     /// 表面色
     vec3 diffuse_;
+
+    /// 環境色
+    vec3 ambient_;
 }
 
