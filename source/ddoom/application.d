@@ -34,7 +34,7 @@ class Application {
         vID_ = glGetUniformLocation(programID_, "V");
         mvID_ = glGetUniformLocation(programID_, "MV");
         lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
-        diffuseID_ = glGetUniformLocation(programID_, "diffuse");
+        diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
 
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/cube.obj");
