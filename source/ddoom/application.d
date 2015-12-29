@@ -30,6 +30,10 @@ class Application {
 
         // 変数のIDを取得
         mvpID_ = glGetUniformLocation(programID_, "MVP");
+        mID_ = glGetUniformLocation(programID_, "M");
+        vID_ = glGetUniformLocation(programID_, "V");
+        mvID_ = glGetUniformLocation(programID_, "MV");
+        lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
         diffuseID_ = glGetUniformLocation(programID_, "diffuse");
 
         // シーンの読み込み
@@ -113,7 +117,12 @@ class Application {
             immutable view = camera_.view;
             immutable projection = camera_.projection;
             immutable mvp = projection * view * model;
+            immutable light = vec3(5.0f, 5.0f, 5.0f);
+
             glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
+            glUniformMatrix4fv(vID_, 1, GL_TRUE, view.value_ptr);
+            glUniformMatrix4fv(mID_, 1, GL_TRUE, model.value_ptr);
+            glUniform3fv(lightPositionID_, 1, light.value_ptr);
 
             // 描画処理
             m.draw(diffuseID_);
@@ -133,6 +142,18 @@ private:
 
     /// 視点変換行列変数のID
     GLuint mvpID_;
+
+    /// ビュー行列変数のID
+    GLuint vID_;
+
+    /// モデル行列変数のID
+    GLuint mID_;
+
+    /// モデルビュー行列変数のID
+    GLuint mvID_;
+
+    /// 光源位置のID
+    GLuint lightPositionID_;
 
     /// 表面色変数のID
     GLuint diffuseID_;
