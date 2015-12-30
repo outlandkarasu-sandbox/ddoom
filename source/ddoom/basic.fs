@@ -17,7 +17,6 @@ void main() {
     float lightPower = 100.0;
     float distance = length(LightPosition_worldspace - Position_worldspace);
 
-
     vec3 n = normalize(Normal_cameraspace);
     vec3 l = normalize(LightDirection_cameraspace);
     float cosTheta = clamp(dot(n, l), 0,1);
