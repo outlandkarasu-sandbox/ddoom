@@ -25,8 +25,8 @@ class Application {
 
         // 頂点シェーダー・ピクセルシェーダーの生成
         programID_ = compileProgram(
-                import("ddoom/test.vs"),
-                import("ddoom/test.fs"));
+                import("ddoom/basic.vs"),
+                import("ddoom/basic.fs"));
 
         // 変数のIDを取得
         mvpID_ = glGetUniformLocation(programID_, "MVP");
@@ -39,7 +39,7 @@ class Application {
         specularID_ = glGetUniformLocation(programID_, "Specular");
 
         // シーンの読み込み
-        scope sceneAsset = new SceneAsset("asset/cube.obj");
+        scope sceneAsset = new SceneAsset("asset/dman.obj");
         auto scene = sceneAsset.createScene(); 
         if(scene.root !is null) {
             meshes_ = scene.root.meshes
