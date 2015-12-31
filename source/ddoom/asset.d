@@ -3,6 +3,8 @@
  */
 module ddoom.asset;
 
+import std.array : empty, front;
+import std.algorithm : find;
 import std.stdio : writefln;
 
 import gl3n.linalg : vec3, vec4, mat4, quat;
@@ -28,6 +30,12 @@ class Scene {
 
         /// アニメーションを取得する
         const(Animation)[] animations() {return animations_;}
+    }
+
+    /// アニメーションの検索
+    const(Animation) findAnimation(string name) @safe const pure nothrow @nogc {
+        auto anime = animations_.find!"a.name == b"(name);
+        return anime.empty ? null : anime[0];
     }
 
 private:
@@ -131,6 +139,12 @@ class Animation {
     
         /// 各ノードのアニメーションを返す
         const(NodeAnimation)[] channels() {return channels_;}
+    }
+
+    /// 指定チャンネルのアニメーションを返す
+    const(NodeAnimation) findChannel(string name) const @safe pure @nogc {
+        auto found = find!"a.nodeName == b"(channels_, name);
+        return found.empty ? null : found.front;
     }
 
 private:

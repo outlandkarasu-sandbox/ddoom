@@ -7,6 +7,7 @@ import derelict.opengl3.gl3;
 import derelict.assimp3.assimp;
 
 import ddoom.sdl;
+import ddoom.gl : checkGLError;
 import ddoom.application : Application;
 
 /// 共有ライブラリのロード
@@ -93,6 +94,7 @@ void main(string[] args) {
         // 描画処理
         try {
             app.drawFrame();
+            checkGLError();
         } catch(Throwable t) {
             stderr.writefln("error: %s", t);
         }

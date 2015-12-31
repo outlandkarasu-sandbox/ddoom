@@ -320,6 +320,9 @@ class GPUProgram {
             /// ハイライトの色
             void specular(vec3 color) {specular_ = color;}
 
+            /// ボーン設定
+            void bones(const(mat4)[] b) {bones_ = b;}
+
             /// Uniform変数の設定
             void setUpUniform() @nogc nothrow {
                 auto pg = program_;
@@ -341,6 +344,13 @@ class GPUProgram {
                 glUniform3fv(pg.diffuseID_, 1, diffuse_.value_ptr);
                 glUniform3fv(pg.ambientID_, 1, ambient_.value_ptr);
                 glUniform3fv(pg.specularID_, 1, specular_.value_ptr);
+
+                // ボーン
+                glUniformMatrix4fv(
+                        pg.bonesID_,
+                        cast(uint) bones_.length,
+                        GL_TRUE,
+                        cast(const(GLfloat)*)bones_.ptr);
             }
         }
 
@@ -360,6 +370,7 @@ class GPUProgram {
         vec3 ambient_;
         vec3 specular_;
         vec3 lightPosition_;
+        const(mat4)[] bones_;
         const(GPUProgram) program_;
     }
 
@@ -381,6 +392,7 @@ class GPUProgram {
         diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
         ambientID_ = glGetUniformLocation(programID_, "Ambient");
         specularID_ = glGetUniformLocation(programID_, "Specular");
+        bonesID_ = glGetUniformLocation(programID_, "Bones");
     }
 
     /// 破棄時の処理
@@ -400,6 +412,7 @@ class GPUProgram {
         diffuseID_ = 0;
         ambientID_ = 0;
         specularID_ = 0;
+        bonesID_ = 0;
     }
 
     /// プログラムを使用し、処理を行う
@@ -441,5 +454,8 @@ private:
 
     /// ハイライト色変数のID
     GLuint specularID_;
+
+    /// ボーン変数のID
+    GLuint bonesID_;
 }
 

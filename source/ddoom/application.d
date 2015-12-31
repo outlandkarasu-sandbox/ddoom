@@ -28,17 +28,23 @@ class Application {
                 import("ddoom/basic.vs"), import("ddoom/basic.fs"));
 
         // シーンの読み込み
-        scope sceneAsset = new SceneAsset("asset/dman.fbx");
+        scope sceneAsset = new SceneAsset("asset/dman.obj");
         auto scene = sceneAsset.createScene(); 
         if(scene.root !is null) {
-            meshes_ = scene.root.meshes
-                .map!(m => new GPUMesh(m))
-                .array;
+            meshes_ = scene.root.meshes;
+            gpuMeshes_ = meshes_.map!(m => new GPUMesh(m)).array;
         }
+
+        // アニメーションの取得
+        animation_ = scene.findAnimation("AnimStack::Armature|Default");
 
         // 視点を設定する
         camera_.move(0.0f, 0.0f, 5.0f)
             .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
+
+        // ボーン変形の初期化
+        boneTransforms_.length = meshes_.length;
+        applyBoneTransform();
     }
 
     /// キーダウン時の処理
@@ -104,7 +110,7 @@ class Application {
 
     /// アプリケーション終了
     void exit() {
-        meshes_.each!(m => m.release());
+        gpuMeshes_.each!(m => m.release());
         program_.release();
     }
 
@@ -120,22 +126,59 @@ private:
 
         // 光源の設定
         context.lightPosition = vec3(5.0f, 10.0f, 5.0f);
-    
+
         // 全メッシュの描画
-        foreach(i, m; meshes_) {
+        foreach(i, m; gpuMeshes_) {
             // モデル変換行列の設定
             context.model = mat4.identity;
 
+            // ボーンの設定
+            context.bones = boneTransforms_[i];
+    
             // 描画処理
             m.draw(context);
         }
     }
 
+    /// ボーンの変形を適用する
+    private void applyBoneTransform() {
+        if(animation_ is null) {
+            return;
+        }
+
+        foreach(i, m; meshes_) {
+            auto transform = boneTransforms_[i];
+            foreach(id, b; m.bones) {
+                auto c = animation_.findChannel(b.name);
+                if(c !is null) {
+                    const pos = c.positionKeys[0].value;
+                    const rotate = c.rotationKeys[0].value;
+                    const scale = c.scalingKeys[0].value;
+                    transform[id]
+                        = mat4.translation(pos)
+                        * rotate.to_matrix!(4, 4)
+                        * mat4.scaling(scale.x, scale.y, scale.z);
+                    writefln("mesh:%s, channel:%s, id:%d, trans:%s",
+                            i, b.name, id, transform[id]);
+                }
+            }
+        }
+    }
+
+    /// メッシュオブジェクト
+    const(Mesh)[] meshes_;
+
+    /// アニメーション
+    const(Animation) animation_;
+
+    /// ボーン変形
+    mat4[100][] boneTransforms_;
+
     /// シェーダープログラム
     GPUProgram program_;
 
     /// メッシュオブジェクト
-    GPUMesh[] meshes_;
+    GPUMesh[] gpuMeshes_;
 
     /// カメラ
     Camera camera_;
