@@ -12,6 +12,7 @@ import ddoom.asset;
 import ddoom.assimp;
 import ddoom.camera;
 import ddoom.gl;
+import ddoom.gpu;
 
 /**
  * DDoom アプリケーションクラス
