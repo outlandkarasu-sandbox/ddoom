@@ -12,6 +12,7 @@ import ddoom.asset;
 import ddoom.assimp;
 import ddoom.camera;
 import ddoom.gl;
+import ddoom.gpu;
 
 /**
  * DDoom アプリケーションクラス
@@ -22,33 +23,28 @@ class Application {
 
     /// 初期化
     this() {
-
-        // 頂点シェーダー・ピクセルシェーダーの生成
-        programID_ = compileProgram(
-                import("ddoom/basic.vs"),
-                import("ddoom/basic.fs"));
-
-        // 変数のIDを取得
-        mvpID_ = glGetUniformLocation(programID_, "MVP");
-        mID_ = glGetUniformLocation(programID_, "M");
-        vID_ = glGetUniformLocation(programID_, "V");
-        mvID_ = glGetUniformLocation(programID_, "MV");
-        lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
-        diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
-        ambientID_ = glGetUniformLocation(programID_, "Ambient");
-        specularID_ = glGetUniformLocation(programID_, "Specular");
+        // シェーダーの生成
+        program_ = new GPUProgram(
+                import("ddoom/basic.vs"), import("ddoom/basic.fs"));
 
         // シーンの読み込み
         scope sceneAsset = new SceneAsset("asset/dman.obj");
         auto scene = sceneAsset.createScene(); 
         if(scene.root !is null) {
-            meshes_ = scene.root.meshes
-                .map!(m => new GPUMesh(m))
-                .array;
+            meshes_ = scene.root.meshes;
+            gpuMeshes_ = meshes_.map!(m => new GPUMesh(m)).array;
         }
 
+        // アニメーションの取得
+        animation_ = scene.findAnimation("AnimStack::Armature|Default");
+
         // 視点を設定する
-        camera_.move(0.0f, 0.0f, 5.0f).perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
+        camera_.move(0.0f, 0.0f, 5.0f)
+            .perspective(2.0f, 2.0f, 45.0f, 0.1f, 100.0f);
+
+        // ボーン変形の初期化
+        boneTransforms_.length = meshes_.length;
+        applyBoneTransform();
     }
 
     /// キーダウン時の処理
@@ -92,7 +88,10 @@ class Application {
     }
 
     /// フレーム描画
-    void drawFrame() {
+    void drawFrame() @nogc {
+        // 終了時にフラッシュ
+        scope(exit) glFlush();
+
         // 隠面消去を有効にする
         glEnable(GL_DEPTH_TEST);
         scope(exit) glDisable(GL_DEPTH_TEST);
@@ -105,69 +104,81 @@ class Application {
         // 画面クリア
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // 全メッシュの描画
-        foreach(i, m; meshes_) {
-            // 終了時にフラッシュ
-            scope(exit) glFlush();
-
-            // 使用プログラム設定
-            glUseProgram(programID_);
-            scope(exit) glUseProgram(0);
-
-            // 視点変換
-            immutable model = mat4.identity;
-            immutable view = camera_.view;
-            immutable projection = camera_.projection;
-            immutable mvp = projection * view * model;
-            immutable light = vec3(5.0f, 10.0f, 5.0f);
-
-            glUniformMatrix4fv(mvpID_, 1, GL_TRUE, mvp.value_ptr);
-            glUniformMatrix4fv(vID_, 1, GL_TRUE, view.value_ptr);
-            glUniformMatrix4fv(mID_, 1, GL_TRUE, model.value_ptr);
-            glUniform3fv(lightPositionID_, 1, light.value_ptr);
-
-            // 描画処理
-            m.draw(diffuseID_, ambientID_, specularID_);
-        }
+        // プログラムを使用して処理を行う
+        program_.duringUse(&drawMeshes);
     }
 
     /// アプリケーション終了
     void exit() {
-        meshes_.each!(m => m.release());
-        glDeleteProgram(programID_);
+        gpuMeshes_.each!(m => m.release());
+        program_.release();
     }
 
 private:
 
-    /// シェーダープログラムID
-    GLuint programID_;
+    /// メッシュの描画
+    void drawMeshes(ref GPUProgram.Context context) const @nogc {
+        // 視点の設定
+        context.view = camera_.view;
+    
+        // 投影変換行列の取得
+        context.projection = camera_.projection;
 
-    /// 視点変換行列変数のID
-    GLuint mvpID_;
+        // 光源の設定
+        context.lightPosition = vec3(5.0f, 10.0f, 5.0f);
 
-    /// ビュー行列変数のID
-    GLuint vID_;
+        // 全メッシュの描画
+        foreach(i, m; gpuMeshes_) {
+            // モデル変換行列の設定
+            context.model = mat4.identity;
 
-    /// モデル行列変数のID
-    GLuint mID_;
+            // ボーンの設定
+            context.bones = boneTransforms_[i];
+    
+            // 描画処理
+            m.draw(context);
+        }
+    }
 
-    /// モデルビュー行列変数のID
-    GLuint mvID_;
+    /// ボーンの変形を適用する
+    private void applyBoneTransform() {
+        if(animation_ is null) {
+            return;
+        }
 
-    /// 光源位置のID
-    GLuint lightPositionID_;
-
-    /// 表面色変数のID
-    GLuint diffuseID_;
-
-    /// 環境色変数のID
-    GLuint ambientID_;
-
-    /// ハイライト色変数のID
-    GLuint specularID_;
+        foreach(i, m; meshes_) {
+            auto transform = boneTransforms_[i];
+            foreach(id, b; m.bones) {
+                auto c = animation_.findChannel(b.name);
+                if(c !is null) {
+                    const pos = c.positionKeys[0].value;
+                    const rotate = c.rotationKeys[0].value;
+                    const scale = c.scalingKeys[0].value;
+                    transform[id]
+                        = mat4.translation(pos)
+                        * rotate.to_matrix!(4, 4)
+                        * mat4.scaling(scale.x, scale.y, scale.z);
+                    writefln("mesh:%s, channel:%s, id:%d, trans:%s",
+                            i, b.name, id, transform[id]);
+                }
+            }
+        }
+    }
 
     /// メッシュオブジェクト
-    GPUMesh[] meshes_;
+    const(Mesh)[] meshes_;
+
+    /// アニメーション
+    const(Animation) animation_;
+
+    /// ボーン変形
+    mat4[100][] boneTransforms_;
+
+    /// シェーダープログラム
+    GPUProgram program_;
+
+    /// メッシュオブジェクト
+    GPUMesh[] gpuMeshes_;
 
     /// カメラ
     Camera camera_;
