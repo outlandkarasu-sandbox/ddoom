@@ -87,11 +87,12 @@ class GPUMesh {
     }
 
     /// 描画
-    void draw(GLuint diffuseID, GLuint ambientID, GLuint specularID) const {
-        // 表面色の設定
-        glUniform3fv(diffuseID, 1, diffuse_.value_ptr);
-        glUniform3fv(ambientID, 1, ambient_.value_ptr);
-        glUniform3fv(specularID, 1, specular_.value_ptr);
+    void draw(ref GPUProgram.Context context) const @nogc nothrow {
+        // マテリアルの設定
+        context.diffuse = diffuse_;
+        context.ambient = ambient_;
+        context.specular = specular_;
+        context.setUpUniform();
 
         // 頂点配列の選択
         glBindVertexArray(vertexArrayID_);
@@ -174,7 +175,7 @@ private:
     }
 
     /// 頂点属性の有効化
-    void enableVertexAttribute(VertexAttribute attribute, GLuint bufferID) const {
+    void enableVertexAttribute(VertexAttribute attribute, GLuint bufferID) const nothrow @nogc {
         glEnableVertexAttribArray(attribute);
         glBindBuffer(GL_ARRAY_BUFFER, bufferID);
         scope(exit) glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -201,5 +202,156 @@ private:
 
     /// ハイライト色
     vec3 specular_;
+}
+
+/// GPU上のシェーダープログラムのクラス
+class GPUProgram {
+
+    /// プログラム使用時のコンテキスト情報
+    struct Context {
+        @property nothrow @nogc {
+
+            /// モデル位置の設定
+            void model(mat4 m) {model_ = m;}
+
+            /// 視点位置の設定
+            void view(mat4 v) {view_ = v;}
+
+            /// 投影変換行列の設定
+            void projection(mat4 v) {projection_ = v;}
+
+            /// 光源位置の設定
+            void lightPosition(vec3 pos) {lightPosition_ = pos;}
+
+            /// 拡散光の色
+            void diffuse(vec3 color) {diffuse_ = color;}
+
+            /// 環境光の色
+            void ambient(vec3 color) {ambient_ = color;}
+
+            /// ハイライトの色
+            void specular(vec3 color) {specular_ = color;}
+
+            /// Uniform変数の設定
+            void setUpUniform() @nogc nothrow {
+                auto pg = program_;
+
+                // モデル行列
+                glUniformMatrix4fv(pg.mID_, 1, GL_TRUE, model_.value_ptr);
+
+                // ビュー行列
+                glUniformMatrix4fv(pg.vID_, 1, GL_TRUE, view_.value_ptr);
+
+                // 光源位置
+                glUniform3fv(pg.lightPositionID_, 1, lightPosition_.value_ptr);
+
+                // 視点変換行列
+                immutable mvp = projection_ * view_ * model_;
+                glUniformMatrix4fv(pg.mvpID_, 1, GL_TRUE, mvp.value_ptr);
+
+                // 表面色の設定
+                glUniform3fv(pg.diffuseID_, 1, diffuse_.value_ptr);
+                glUniform3fv(pg.ambientID_, 1, ambient_.value_ptr);
+                glUniform3fv(pg.specularID_, 1, specular_.value_ptr);
+            }
+        }
+
+    private:
+        /// 新規生成禁止
+        this(const(GPUProgram) program) @safe nothrow pure @nogc
+        in {
+            assert(program !is null);
+        } body {
+            program_ = program;
+        }
+
+        mat4 view_;
+        mat4 model_;
+        mat4 projection_;
+        vec3 diffuse_;
+        vec3 ambient_;
+        vec3 specular_;
+        vec3 lightPosition_;
+        const(GPUProgram) program_;
+    }
+
+    /**
+     *  Params:
+     *      vertexShader = 頂点シェーダーのソース
+     *      fragmentShader = ピクセルシェーダーのソース
+     */
+    this(string vertexShader, string fragmentShader) {
+        // 頂点シェーダー・ピクセルシェーダーの生成
+        programID_ = compileProgram(vertexShader, fragmentShader);
+
+        // 変数のIDを取得
+        mvpID_ = glGetUniformLocation(programID_, "MVP");
+        mID_ = glGetUniformLocation(programID_, "M");
+        vID_ = glGetUniformLocation(programID_, "V");
+        mvID_ = glGetUniformLocation(programID_, "MV");
+        lightPositionID_ = glGetUniformLocation(programID_, "LightPosition_worldspace");
+        diffuseID_ = glGetUniformLocation(programID_, "Diffuse");
+        ambientID_ = glGetUniformLocation(programID_, "Ambient");
+        specularID_ = glGetUniformLocation(programID_, "Specular");
+    }
+
+    /// 破棄時の処理
+    ~this() nothrow @nogc {
+        release();
+    }
+
+    /// プログラムの解放
+    void release() nothrow @nogc {
+        glDeleteProgram(programID_);
+        programID_ = 0;
+        mvpID_ = 0;
+        vID_ = 0;
+        mID_ = 0;
+        mvID_ = 0;
+        lightPositionID_ = 0;
+        diffuseID_ = 0;
+        ambientID_ = 0;
+        specularID_ = 0;
+    }
+
+    /// プログラムを使用し、処理を行う
+    void duringUse(void delegate(ref Context) @nogc dg) const @nogc {
+        // 使用プログラム設定
+        glUseProgram(programID_);
+        scope(exit) glUseProgram(0);
+
+        // 使用中の処理実行
+        auto ctx = Context(this);
+        dg(ctx);
+    }
+
+private:
+
+    /// シェーダープログラムID
+    GLuint programID_;
+
+    /// 視点変換行列変数のID
+    GLuint mvpID_;
+
+    /// ビュー行列変数のID
+    GLuint vID_;
+
+    /// モデル行列変数のID
+    GLuint mID_;
+
+    /// モデルビュー行列変数のID
+    GLuint mvID_;
+
+    /// 光源位置のID
+    GLuint lightPositionID_;
+
+    /// 表面色変数のID
+    GLuint diffuseID_;
+
+    /// 環境色変数のID
+    GLuint ambientID_;
+
+    /// ハイライト色変数のID
+    GLuint specularID_;
 }
 
