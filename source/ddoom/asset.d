@@ -16,21 +16,139 @@ class Scene {
     /**
      *  Params:
      *      root = ルートノード
+     *      animations = アニメーション
      */
-    this(const(Node) root) @safe pure nothrow @nogc {
+    this(const(Node) root,
+            const(Animation)[] animations) @safe pure nothrow @nogc {
         root_ = root;
+        animations_ = animations;
     }
 
     @property @safe const pure nothrow @nogc {
 
         /// ルートノードを取得する
         const(Node) root() {return root_;}
+
+        /// アニメーションを取得する
+        const(Animation)[] animations() {return animations_;}
     }
 
 private:
 
     /// ルートノード
     const(Node) root_;
+
+    /// アニメーション
+    const(Animation)[] animations_;
+}
+
+/// ノードのアニメーション
+class NodeAnimation {
+
+    /// キーフレーム構造体
+    struct Key(T) {
+        double time;
+        T value;
+    }
+
+    alias Key!vec3 VectorKey;
+    alias Key!quat QuaternionKey;
+
+    /**
+     *  Params:
+     *      nodeName = 対象ノード名
+     *      positionKeys = 位置のキーフレーム
+     *      rotateKeys = 回転のキーフレーム
+     *      scalingKeys = スケーリングのキーフレーム
+     */
+    this(string nodeName,
+            const(VectorKey)[] positionKeys,
+            const(QuaternionKey)[] rotationKeys,
+            const(VectorKey)[] scalingKeys) {
+        nodeName_ = nodeName;
+        positionKeys_ = positionKeys;
+        rotationKeys_ = rotationKeys;
+        scalingKeys_ = scalingKeys;
+    }
+
+    @property @safe const pure nothrow @nogc {
+
+        /// 対象ノード名
+        string nodeName() {return nodeName_;}
+
+        /// 位置のキーフレーム
+        const(VectorKey)[] positionKeys() {return positionKeys_;}
+
+        /// 回転のキーフレーム
+        const(QuaternionKey)[] rotationKeys() {return rotationKeys_;}
+
+        /// スケーリングのキーフレーム
+        const(VectorKey)[] scalingKeys() {return scalingKeys_;}
+    }
+
+private:
+
+    /// 対象ノード名
+    string nodeName_;
+
+    /// 位置のキーフレーム
+    const(VectorKey)[] positionKeys_;
+
+    /// 回転のキーフレーム
+    const(QuaternionKey)[] rotationKeys_;
+
+    /// スケールのキーフレーム
+    const(VectorKey)[] scalingKeys_;
+}
+
+/// アニメーション
+class Animation {
+
+    /**
+     *  Params:
+     *      name = アニメーション名
+     *      duration = アニメーションの長さ
+     *      ticksPerSecond = 秒間フレーム数
+     *      channels = 各ノードのアニメーション
+     */
+    this(string name,
+            double duration,
+            double ticksPerSecond,
+            const(NodeAnimation)[] channels) {
+        name_ = name;
+        duration_ = duration;
+        ticksPerSecond_ = ticksPerSecond;
+        channels_ = channels;
+    }
+
+    @property @safe const pure nothrow @nogc {
+
+        /// 名前を返す
+        string name() {return name_;}
+
+        /// アニメーションの長さを返す
+        double duration() {return duration_;}
+
+        /// 秒間フレーム数を返す
+        double ticksPerSecond() {return ticksPerSecond_;}
+    
+        /// 各ノードのアニメーションを返す
+        const(NodeAnimation)[] channels() {return channels_;}
+    }
+
+private:
+
+    /// 名前
+    string name_;
+
+    /// アニメーションの長さ
+    double duration_;
+
+    /// 秒間フレーム数
+    double ticksPerSecond_;
+
+    /// 各ノードのアニメーション
+    const(NodeAnimation)[] channels_;
 }
 
 /// 描画色などのマテリアル
