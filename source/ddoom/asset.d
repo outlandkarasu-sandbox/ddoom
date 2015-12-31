@@ -130,6 +130,51 @@ private:
     const(mat4) transformation_;
 }
 
+/// ボーン
+class Bone {
+
+    /// 重み付け
+    struct Weight {
+        uint vertexId;
+        float weight;
+    }
+
+    /**
+     *  Params:
+     *      name = ボーン名
+     *      offset = オフセット行列
+     *      weights = 重み付け
+     */
+    this(string name, ref const mat4 offset, const(Weight)[] weights) {
+        name_ = name;
+        offset_ = offset;
+        weights_ = weights_;
+    }
+
+    @property @safe const pure nothrow @nogc {
+
+        /// メッシュ名
+        string name() {return name_;}
+
+        /// オフセット行列
+        const(mat4) offset() {return offset_;}
+
+        /// 重み付け
+        const(Weight)[] weights() {return weights_;}
+    }
+
+private:
+
+    /// メッシュ名
+    string name_;
+
+    /// オフセット行列
+    const(mat4) offset_;
+
+    /// 重み付け
+    const(Weight)[] weights_;
+}
+
 /// メッシュ
 class Mesh {
 
@@ -137,28 +182,38 @@ class Mesh {
      *  Params:
      *      name = メッシュ名
      *      vertices = 頂点配列
+     *      normals = 法線配列
+     *      bones = ボーン配列
      *      faces = 面配列
      *      material = マテリアル
      */
     this(string name,
             const(vec3)[] vertices,
             const(vec3)[] normals,
+            const(Bone)[] bones,
             const(uint[][uint]) faces,
             const(Material) material) @safe pure nothrow @nogc {
         name_ = name;
         vertices_ = vertices;
         normals_ = normals;
+        bones_ = bones;
         faces_ = faces;
         material_ = material;
     }
 
     @property @safe const pure nothrow @nogc {
 
+        /// メッシュ名
+        string name() {return name_;}
+
         /// 頂点配列を返す
         const(vec3)[] vertices() {return vertices_;}
 
         /// 法線配列を返す
         const(vec3)[] normals() {return normals_;}
+
+        /// ボーン
+        const(Bone)[] bones() {return bones_;}
 
         /// 面配列を返す
         const(uint[][uint]) faces() {return faces_;}
@@ -177,6 +232,9 @@ private:
 
     /// 法線配列
     const(vec3)[] normals_;
+
+    /// ボーン配列
+    const(Bone)[] bones_;
 
     /// 面配列
     const(uint[][uint]) faces_;

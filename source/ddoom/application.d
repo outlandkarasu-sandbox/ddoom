@@ -39,7 +39,7 @@ class Application {
         specularID_ = glGetUniformLocation(programID_, "Specular");
 
         // シーンの読み込み
-        scope sceneAsset = new SceneAsset("asset/dman.obj");
+        scope sceneAsset = new SceneAsset("asset/dman.fbx");
         auto scene = sceneAsset.createScene(); 
         if(scene.root !is null) {
             meshes_ = scene.root.meshes

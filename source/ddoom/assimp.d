@@ -96,6 +96,15 @@ private:
         return s.data[0 .. s.length].idup;
     }
 
+    /// 行列変換
+    static mat4 fromAiMatrix4x4(ref const aiMatrix4x4 m) @safe pure nothrow @nogc {
+        return mat4(
+                m.a1, m.a2, m.a3, m.a4,
+                m.b1, m.b2, m.b3, m.b4,
+                m.c1, m.c2, m.c3, m.c4,
+                m.d1, m.d2, m.d3, m.d4);
+    }
+
     /// ノードの生成
     Node createNode(const(aiNode)* node, const(Mesh)[] meshes) const {
         // ノード名
@@ -108,12 +117,7 @@ private:
                     .array;
 
         // 変換行列
-        auto a = node.mTransformation;
-        auto trans = mat4(
-                a.a1, a.a2, a.a3, a.a4,
-                a.b1, a.b2, a.b3, a.b4,
-                a.c1, a.c2, a.c3, a.c4,
-                a.d1, a.d2, a.d3, a.d4);
+        auto trans = fromAiMatrix4x4(node.mTransformation);
 
         return new Node(name, meshes, children, trans);
     }
@@ -149,6 +153,22 @@ private:
         return Material.Color(c.r, c.g, c.b, c.a);
     }
 
+    /// ボーンの生成
+    Bone createBone(const(aiBone)* bone) const {
+        // ボーン名
+        auto name = fromAiString(bone.mName);
+
+        // オフセット
+        auto offset = fromAiMatrix4x4(bone.mOffsetMatrix);
+
+        // 重み付け
+        auto weights = bone.mWeights[0 .. bone.mNumWeights]
+            .map!(b => Bone.Weight(b.mVertexId, b.mWeight))
+            .array;
+
+        return new Bone(name, offset, weights);
+    }
+
     /// メッシュの生成
     Mesh createMesh(const(aiMesh)* mesh, const(Material)[] materials) const {
         // メッシュ名
@@ -165,6 +185,16 @@ private:
         if(mesh.mNormals !is null) {
             normals = mesh.mNormals[0 .. mesh.mNumVertices]
                 .map!(n => vec3(n.x, n.y, n.z))
+                .array;
+        }
+
+        writefln("mesh %s bones %d", name, mesh.mNumBones);
+
+        // ボーン配列
+        const(Bone)[] bones;
+        if(mesh.mBones !is null) {
+            bones = mesh.mBones[0 .. mesh.mNumBones]
+                .map!(b => createBone(b))
                 .array;
         }
 
@@ -188,7 +218,8 @@ private:
         // マテリアルの取得
         immutable mi = mesh.mMaterialIndex;
         auto material = (mi < materials.length) ? materials[mi] : null;
-        return new Mesh(name, vertices, normals, facesArray, material);
+        return new Mesh(
+                name, vertices, normals, bones, facesArray, material);
     }
 
     /// シーンへのポインタ
