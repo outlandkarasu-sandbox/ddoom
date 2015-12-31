@@ -268,7 +268,7 @@ class Bone {
 
     @property @safe const pure nothrow @nogc {
 
-        /// メッシュ名
+        /// ボーン名
         string name() {return name_;}
 
         /// オフセット行列
